@@ -34,3 +34,4 @@ clean:
 
 run-wasi:
 	wasmtime run $(BIN_WASI) -- $(N)
+

@@ -35,6 +35,7 @@ write_big_buffer (int count)
 			perror ("write");
 			return 1;
 		} else if (written >= 0) {
+			fprintf(stderr, "wrote %d bytes (%d remaining) to stdout\n", (int)written, (int)(to_write - written));
 			to_write -= written;
 			ptr+=written;
 		}
