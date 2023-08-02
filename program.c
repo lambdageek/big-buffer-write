@@ -73,10 +73,32 @@ main (int argc, char **argv)
 	}
 	if (checkPermissions)
 	{
+		struct stat pipeDirStat;
+		if (stat("/pipe", &pipeDirStat) < 0)
+		{
+			perror("stat /pipe");
+			return 1;
+		}
+		if (((pipeDirStat.st_mode & S_IFMT) != S_IFDIR) ||
+			(pipeDirStat.st_mode & S_IRUSR) == 0 ||
+			(pipeDirStat.st_mode & S_IXUSR) == 0)
+		{
+			fprintf(stderr, "the mode for /pipe is 0%o\n", pipeDirStat.st_mode);
+		}
+
 		struct stat seedPathStat;
 		if (fstat(input, &seedPathStat) < 0)
 		{
-			perror("stat");
+			int saved_errno = errno;
+			perror("fstat input");
+			if (saved_errno == EPERM)
+			{
+				fprintf(stderr, "that's EPERM\n");
+			}
+			else if (saved_errno == EACCES)
+			{
+				fprintf(stderr, "that's EACCESS\n");
+			}
 			return 1;
 		}
 		if ((seedPathStat.st_mode & S_IRUSR) == 0)
