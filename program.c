@@ -64,10 +64,17 @@ main (int argc, char **argv)
 	}
 	const char *seedPath = "/pipe/input";
 	const int checkPermissions = 1;
+	// Note: open(2) succeeds even without read permissions!
+	int input = open(seedPath, O_RDONLY);
+	if (input < 0)
+	{
+		perror("open");
+		return 1;
+	}
 	if (checkPermissions)
 	{
 		struct stat seedPathStat;
-		if (stat(seedPath, &seedPathStat) < 0)
+		if (fstat(input, &seedPathStat) < 0)
 		{
 			perror("stat");
 			return 1;
@@ -81,13 +88,6 @@ main (int argc, char **argv)
 		{
 			fprintf(stderr, "%s is not a character device\n", seedPath);
 		}
-	}
-	// Note: open(2) succeeds even without read permissions!
-	int input = open(seedPath, O_RDONLY);
-	if (input < 0)
-	{
-		perror("open");
-		return 1;
 	}
 	char buf[1];
 	int n = read(input, buf, 1);
