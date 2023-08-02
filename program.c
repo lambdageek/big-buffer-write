@@ -1,4 +1,6 @@
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -60,7 +62,46 @@ main (int argc, char **argv)
 		fprintf (stderr, "count must be positive\n");
 		return 1;
 	}
-	int seed = (int)time(0);
+	const char *seedPath = "/pipe/input";
+	const int checkPermissions = 1;
+	if (checkPermissions)
+	{
+		struct stat seedPathStat;
+		if (stat(seedPath, &seedPathStat) < 0)
+		{
+			perror("stat");
+			return 1;
+		}
+		if ((seedPathStat.st_mode & S_IRUSR) == 0)
+		{
+			fprintf(stderr, "%s is not user-readable\n", seedPath);
+			return 1;
+		}
+		if ((seedPathStat.st_mode & S_IFCHR) == 0)
+		{
+			fprintf(stderr, "%s is not a character device\n", seedPath);
+		}
+	}
+	// Note: open(2) succeeds even without read permissions!
+	int input = open(seedPath, O_RDONLY);
+	if (input < 0)
+	{
+		perror("open");
+		return 1;
+	}
+	char buf[1];
+	int n = read(input, buf, 1);
+	if (n < 1)
+	{
+		if (n == 0)
+			fprintf(stderr, "expected to read 1 byte, got %d", n);
+		else
+			perror("read");
+		return 1;
+	}
+	int seed = buf[0];
+	close(input);
+	// int seed = (int)time(0);
 	fprintf(stderr, "seed %d\n", seed);
 	srand(seed);
 	if (write_big_buffer(count) != 0) {

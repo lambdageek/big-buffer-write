@@ -10,9 +10,19 @@ export async function activate(context: ExtensionContext) {
 	commands.registerCommand('big-buffer-write.run-full', async (n: number) => {
 		await commands.executeCommand('workbench.output.action.switchBetweenOutputs', 'lambdageek.big-buffer-write.big-buffer-write');
 		try {
+			const memFS = await wasm.createMemoryFileSystem();
 			const rootFileSystem = await wasm.createRootFileSystem([
-				{ kind: 'workspaceFolder' }
+				{ kind: 'workspaceFolder' },
+				{
+					kind: 'memoryFileSystem',
+					mountPoint: '/pipe',
+					fileSystem: memFS
+				},
 			]);
+			const pipeIn = memFS.createWritable('./input', 'utf-8');
+			const seedBuf = new Uint8Array(1);
+			seedBuf[0] = 42;
+			pipeIn.write(seedBuf);
 			const options: ProcessOptions = {
 				stdio: {
 					in: { 'kind': 'pipeIn' },
